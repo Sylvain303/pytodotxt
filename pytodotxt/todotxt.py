@@ -44,14 +44,34 @@ class TodoTxt:
                     # use the first found newline separator
                     self.linesep = fd.newlines[0]
 
-            # read lines and parse them as tasks
-            for linenr, line in enumerate(lines):
-                if len(line.strip()) == 0:
-                    continue
-                task = self.task_class(line, linenr=linenr, todotxt=self)
-                self.tasks.append(task)
+            self.parse_from_lines(lines)
 
         return self.tasks
+
+    def parse_from_lines(self, lines, filter_func=None):
+        """(Re)parse an input from list of line of text
+        used by parse()
+        filter_func: an optional function or method to get str from
+                     if lines contain more complex object.
+        """
+        self.tasks = []
+
+        # read lines and parse them as tasks
+        for linenr, line in enumerate(lines):
+            if callable(filter_func):
+                line = filter_func(line)
+
+            if len(line.strip()) == 0:
+                continue
+            self.add_task(line, linenr)
+
+        return self.tasks
+
+    def add_task(self, line, linenr=None):
+        if linenr is None:
+            linenr = len(self.tasks)
+        task = self.task_class(line.strip(), linenr=linenr, todotxt=self)
+        self.tasks.append(task)
 
     def save(self, target=None, safe=True, linesep=None):
         """Save all tasks to disk
@@ -87,8 +107,7 @@ class TodoTxt:
             linesep = self.linesep
 
         with open(write_to, 'wb', buffering=0) as fd:
-            lines = [str(task) + linesep for task in
-                     sorted(self.tasks, key=lambda t: t.linenr if t.linenr is not None else len(self.tasks))]
+            lines = [ l + linesep for l in self.get_text_lines() ]
             fd.write(bytes(''.join(lines), self.encoding))
 
         if safe:
@@ -98,6 +117,12 @@ class TodoTxt:
                 os.unlink(write_to)
             except OSError:
                 pass
+
+    def get_text_lines(self):
+        """Get all Task as list on lines (str)
+        """
+        return [str(task) for task in
+                 sorted(self.tasks, key=lambda t: t.linenr if t.linenr is not None else len(self.tasks))]
 
     def __repr__(self):
         return f'{self.__class__.__name__}(filename="{self.filename}")'
@@ -377,6 +402,17 @@ class Task:
             result += self.description
 
         return result
+
+    def set_completed(self, completed=True, completion_date=None):
+        self.is_completed = completed
+
+        if completion_date is not None:
+            self.completion_date = completion_date
+
+        # update parent item in tasks[]
+        if self.todotxt and self.linenr and self == self.todotxt.tasks[self.linenr]:
+            self.todotxt.tasks[self.linenr].is_completed = self.is_completed
+            self.todotxt.tasks[self.linenr].completion_date = self.completion_date
 
     def __repr__(self):
         return f'{self.__class__.__name__}({repr(str(self))})'
