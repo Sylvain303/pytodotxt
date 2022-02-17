@@ -43,12 +43,27 @@ class TodoTxt:
                     # use the first found newline separator
                     self.linesep = fd.newlines[0]
 
-            # read lines and parse them as tasks
-            for linenr, line in enumerate(lines):
-                if len(line.strip()) == 0:
-                    continue
-                task = Task(line, linenr=linenr, todotxt=self)
-                self.tasks.append(task)
+            self.parse_from_lines(lines)
+
+        return self.tasks
+
+    def parse_from_lines(self, lines, filter_func=None):
+        """(Re)parse an input from list of line of text
+        used by parse()
+        filter_func: an optional function or method to get str from
+                     if lines contain more complex object.
+        """
+        self.tasks = []
+
+        # read lines and parse them as tasks
+        for linenr, line in enumerate(lines):
+            if callable(filter_func):
+                line = filter_func(line)
+
+            if len(line.strip()) == 0:
+                continue
+            task = Task(line, linenr=linenr, todotxt=self)
+            self.tasks.append(task)
 
         return self.tasks
 
