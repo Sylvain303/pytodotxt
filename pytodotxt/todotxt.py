@@ -403,16 +403,6 @@ class Task:
 
         return result
 
-    def set_completed(self, completed=True, completion_date=None):
-        self.is_completed = completed
-
-        if completion_date is not None:
-            self.completion_date = completion_date
-
-        # update parent item in tasks[]
-        if self.todotxt and self.linenr and self == self.todotxt.tasks[self.linenr]:
-            self.todotxt.tasks[self.linenr].is_completed = self.is_completed
-            self.todotxt.tasks[self.linenr].completion_date = self.completion_date
 
     def __repr__(self):
         return f'{self.__class__.__name__}({repr(str(self))})'
