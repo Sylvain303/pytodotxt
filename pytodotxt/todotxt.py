@@ -126,7 +126,8 @@ class TodoTxt:
         """
         if linesep is None:
             linesep = self.linesep
-        stream.write(bytes(linesep.join(self.lines), self.encoding))
+        txt = linesep.join(self.lines) + linesep
+        stream.write(bytes(txt, self.encoding))
 
     @property
     def lines(self):
